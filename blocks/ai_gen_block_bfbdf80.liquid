@@ -1,0 +1,400 @@
+{% doc %}
+  @prompt
+    Can you create a paralax secrion fo rm, The background image isn't centered horizontally , The background image is cut off at the top, Can you make the background image fill the entire parallax. It also isnt scrolling , The background isn't scrolling witht he parallax
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-parallax-section-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    height: {{ block.settings.section_height }}vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ai-parallax-background-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 150%;
+    z-index: 0;
+    will-change: transform;
+  }
+
+  .ai-parallax-background-{{ ai_gen_id }} img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+  }
+
+  .ai-parallax-background-placeholder-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ai-parallax-background-placeholder-{{ ai_gen_id }} svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-parallax-overlay-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: {{ block.settings.overlay_color }};
+    opacity: {{ block.settings.overlay_opacity | divided_by: 100.0 }};
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .ai-parallax-content-{{ ai_gen_id }} {
+    position: relative;
+    z-index: 2;
+    text-align: {{ block.settings.text_alignment }};
+    max-width: {{ block.settings.content_width }}px;
+    padding: 40px 20px;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-parallax-heading-{{ ai_gen_id }} {
+    margin: 0 0 16px;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.heading_size }}px;
+    line-height: 1.2;
+  }
+
+  .ai-parallax-subheading-{{ ai_gen_id }} {
+    margin: 0 0 24px;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.subheading_size }}px;
+    opacity: 0.9;
+    line-height: 1.5;
+  }
+
+  .ai-parallax-button-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 14px 32px;
+    background-color: {{ block.settings.button_background }};
+    color: {{ block.settings.button_text_color }};
+    text-decoration: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+
+  .ai-parallax-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_background }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-parallax-section-{{ ai_gen_id }} {
+      height: {{ block.settings.mobile_section_height }}vh;
+    }
+
+    .ai-parallax-heading-{{ ai_gen_id }} {
+      font-size: {{ block.settings.heading_size | times: 0.6 }}px;
+    }
+
+    .ai-parallax-subheading-{{ ai_gen_id }} {
+      font-size: {{ block.settings.subheading_size | times: 0.8 }}px;
+    }
+
+    .ai-parallax-content-{{ ai_gen_id }} {
+      padding: 20px;
+    }
+  }
+{% endstyle %}
+
+<parallax-section-{{ ai_gen_id }}
+  class="ai-parallax-section-{{ ai_gen_id }}"
+  data-parallax-speed="{{ block.settings.parallax_speed }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-parallax-background-{{ ai_gen_id }}" data-parallax-bg>
+    {% if block.settings.background_image %}
+      <img
+        src="{{ block.settings.background_image | image_url: width: 2400 }}"
+        alt="{{ block.settings.background_image.alt | escape }}"
+        loading="lazy"
+        width="{{ block.settings.background_image.width }}"
+        height="{{ block.settings.background_image.height }}"
+      >
+    {% else %}
+      <div class="ai-parallax-background-placeholder-{{ ai_gen_id }}">
+        {{ 'hero-apparel-1' | placeholder_svg_tag }}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if block.settings.show_overlay %}
+    <div class="ai-parallax-overlay-{{ ai_gen_id }}"></div>
+  {% endif %}
+
+  <div class="ai-parallax-content-{{ ai_gen_id }}">
+    {% if block.settings.heading != blank %}
+      <h2 class="ai-parallax-heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+    {% endif %}
+
+    {% if block.settings.subheading != blank %}
+      <div class="ai-parallax-subheading-{{ ai_gen_id }}">{{ block.settings.subheading }}</div>
+    {% endif %}
+
+    {% if block.settings.button_text != blank %}
+      <a
+        href="{{ block.settings.button_link }}"
+        class="ai-parallax-button-{{ ai_gen_id }}"
+      >
+        {{ block.settings.button_text }}
+      </a>
+    {% endif %}
+  </div>
+</parallax-section-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ParallaxSection{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.background = this.querySelector('[data-parallax-bg]');
+        this.parallaxSpeed = parseFloat(this.dataset.parallaxSpeed) || 0.5;
+      }
+
+      connectedCallback() {
+        this.updateParallax();
+        window.addEventListener('scroll', this.updateParallax.bind(this));
+        window.addEventListener('resize', this.updateParallax.bind(this));
+      }
+
+      disconnectedCallback() {
+        window.removeEventListener('scroll', this.updateParallax.bind(this));
+        window.removeEventListener('resize', this.updateParallax.bind(this));
+      }
+
+      updateParallax() {
+        if (!this.background) return;
+
+        const rect = this.getBoundingClientRect();
+        const scrolled = window.pageYOffset || document.documentElement.scrollTop;
+        const elementTop = rect.top + scrolled;
+        const elementHeight = rect.height;
+        const viewportHeight = window.innerHeight;
+        
+        const scrollPosition = scrolled + viewportHeight / 2;
+        const elementCenter = elementTop + elementHeight / 2;
+        const distance = scrollPosition - elementCenter;
+        
+        const offset = distance * this.parallaxSpeed;
+        
+        this.background.style.transform = 'translateY(' + offset + 'px)';
+      }
+    }
+
+    customElements.define('parallax-section-{{ ai_gen_id }}', ParallaxSection{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Parallax section",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
+    },
+    {
+      "type": "range",
+      "id": "parallax_speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "label": "Parallax speed",
+      "default": 0.5
+    },
+    {
+      "type": "range",
+      "id": "section_height",
+      "min": 30,
+      "max": 100,
+      "step": 5,
+      "unit": "vh",
+      "label": "Desktop height",
+      "default": 70
+    },
+    {
+      "type": "range",
+      "id": "mobile_section_height",
+      "min": 30,
+      "max": 100,
+      "step": 5,
+      "unit": "vh",
+      "label": "Mobile height",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Overlay"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_overlay",
+      "label": "Show overlay",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Overlay opacity",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Parallax Section"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 20,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 56
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Scroll to see the parallax effect"
+    },
+    {
+      "type": "range",
+      "id": "subheading_size",
+      "min": 12,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Subheading size",
+      "default": 18
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "content_width",
+      "min": 400,
+      "max": 1000,
+      "step": 50,
+      "unit": "px",
+      "label": "Content width",
+      "default": 700
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Button background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_background",
+      "label": "Button hover background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "label": "Button border radius",
+      "default": 14
+    }
+  ],
+  "presets": [
+    {
+      "name": "Parallax section"
+    }
+  ]
+}
+{% endschema %}
